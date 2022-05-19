@@ -1,11 +1,18 @@
 <template>
   <div class="bg-gray-900 text-white">
-    <div v-if="isLoading" class="h-full min-h-screen flex flex-col justify-center items-center">
+    <div v-if="isLoading && !isLoadingModal" class="h-full min-h-screen flex flex-col justify-start items-center pt-4">
       <img src="@/assets/images/loader-dot.gif" class="w-8 mb-2" alt="" srcset="" />
       <p>Memuat kitab halaman {{ currPage }}</p>
     </div>
+    <div v-if="isLoading && isLoadingModal" class="h-full min-h-screen flex flex-col justify-start items-center pt-4">
+      <img src="@/assets/images/loader-dot.gif" class="w-8 mb-2" alt="" srcset="" />
+      <p>Mencari kata kunci {{ keywords }}</p>
+    </div>
     <div v-else class="pb-20">
-      <div v-for="item in list" class="p-4 pb-0">
+      <div class="h-full min-h-screen flex justify-center items-center" v-if="list.length === 0">
+        Data tidak ditemukan..
+      </div>
+      <div v-else v-for="item in list" class="p-4 pb-0">
         <div class="bg-gray-500 p-4 rounded-md">
           <div class="text-xl teks-arab">{{ item.arab }}</div>
           <div class="mt-2 text-base">{{ item.id }}</div>
@@ -37,7 +44,12 @@
       <button class="hover:bg-gray-100 text-white h-full px-2 py-2 rounded-lg" @click="searchDataWithText">🔍</button>
     </footer>
 
-    <Modal :isOpen="isOpen" @closeModal="closeModal" />
+    <Modal
+      :isOpen="isOpenModal"
+      :isLoadingModal="isLoadingModal"
+      @closeModal="closeModal"
+      @submitSearchText="submitSearchText"
+    />
   </div>
 </template>
 
@@ -57,13 +69,16 @@ export default {
   props: {},
   setup() {
     const isLoading = ref(false);
-    const isOpen = ref(false);
+    const isLoadingModal = ref(false);
+    const keywords = ref(null);
+
+    const isOpenModal = ref(false);
     const route = useRoute();
     const book = route.query.book;
     const list = ref([]);
     const currPage = ref(1);
     const totalPage = ref(0);
-    const limit = ref(20);
+    const limit = ref(10);
     //const count = ref(0);
     //const titles = toRefs(props.title);
     /* -------------------------------------------------------------------------- */
@@ -73,10 +88,6 @@ export default {
     /* -------------------------------------------------------------------------- */
     /*                                   method                                   */
     /* -------------------------------------------------------------------------- */
-    //const inc = () => {
-    //	count.value++;
-    //};
-
     const getBooks = async () => {
       isLoading.value = true;
       try {
@@ -98,12 +109,12 @@ export default {
 
     const searchDataWithText = () => {
       document.querySelector("html").style.overflowY = "hidden";
-      isOpen.value = true;
+      isOpenModal.value = true;
     };
 
     const closeModal = () => {
       document.querySelector("html").style.overflowY = "auto";
-      isOpen.value = false;
+      isOpenModal.value = false;
     };
 
     const backToHome = () => {
@@ -120,29 +131,42 @@ export default {
       getBooks();
     };
 
+    const submitSearchText = async (value) => {
+      isLoading.value = true;
+      isLoadingModal.value = true;
+      keywords.value = value;
+
+      try {
+        const params = {
+          book,
+          search: value,
+          page: currPage.value,
+          limit: limit.value,
+        };
+        const res = await api().detail.searchTextFromBooks(params);
+        isOpenModal.value = false;
+
+        list.value = res.data.result.results;
+        totalPage.value = res.data.result.totalPage;
+      } catch (error) {
+        console.log(error);
+      } finally {
+        isLoading.value = false;
+        isLoadingModal.value = false;
+        keywords.value = null;
+        document.querySelector("html").style.overflowY = "auto";
+      }
+    };
+
     const api = () => {
       return Api(axios, import.meta.env.VITE_APP_BASE_API_URL);
     };
-    /* -------------------------------------------------------------------------- */
-    /*                                 computed                                   */
-    /* -------------------------------------------------------------------------- */
-    //const compCount = computed(() => {
-    //	return count.value + 2;
-    //});
-    /* -------------------------------------------------------------------------- */
-    /*                                 watcher                                    */
-    /* -------------------------------------------------------------------------- */
-    // eslint-disable-next-line no-undef
-    //watch(
-    //	() => count.value,
-    //		(currCount, prevCount) => {
-    //		console.log(currCount, prevCount);
-    //	}
-    //);
-    //watch(titles, (title) => console.log(title));
+
     return {
       isLoading,
-      isOpen,
+      isLoadingModal,
+      keywords,
+      isOpenModal,
       book,
       currPage,
       totalPage,
@@ -152,6 +176,7 @@ export default {
       backToHome,
       searchDataWithText,
       closeModal,
+      submitSearchText,
     };
   },
 };

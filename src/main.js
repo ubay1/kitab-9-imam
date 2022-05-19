@@ -27,4 +27,13 @@ app.use(createPinia());
 app.use(router);
 app.use(head);
 
+// Register a global custom directive called `v-focus`
+app.directive("focus", {
+  // When the bound element is mounted into the DOM...
+  mounted(el) {
+    // Focus the element
+    el.focus();
+  },
+});
+
 app.mount("#app");

@@ -12,8 +12,20 @@ export default (axios, baseUrl) => {
         throw error.response;
       });
 
+  const postData = (endpoint, params = {}, mapper = null) =>
+    axios
+      .post(`${baseUrl}${endpoint}`, null, { params })
+      .then((response) => {
+        return response;
+      })
+      .catch((error) => {
+        console.log(error.response); // eslint-disable-line
+        throw error.response;
+      });
+
   const apis = {
     getBooks: (book, params) => getData(`/books/${book}`, params),
+    searchTextFromBooks: (params) => postData(`/search`, params),
   };
 
   return apis;
