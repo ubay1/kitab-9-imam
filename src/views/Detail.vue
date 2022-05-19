@@ -12,7 +12,7 @@
         </div>
       </div>
     </div>
-    <footer class="fixed flex bottom-0 bg-white w-full shadow-lg text-gray-800 py-2 px-2">
+    <footer class="fixed flex justify-between bottom-0 bg-white w-full shadow-lg text-gray-800 py-2 px-2">
       <button class="hover:bg-gray-100 text-white h-full px-2 py-2 rounded-lg" @click="backToHome">🏠</button>
 
       <div class="w-full flex justify-center items-center rounded-lg">
@@ -34,13 +34,15 @@
           ▶️
         </button>
       </div>
+      <button class="hover:bg-gray-100 text-white h-full px-2 py-2 rounded-lg" @click="searchDataWithText">🔍</button>
     </footer>
+
+    <Modal :isOpen="isOpen" @closeModal="closeModal" />
   </div>
 </template>
 
 <script>
 // @ts-nocheck
-
 // eslint-disable-next-line no-unused-vars
 import { ref, toRefs, onMounted } from "vue";
 import { useRoute } from "vue-router";
@@ -48,11 +50,14 @@ import Api from "../apis";
 import axios from "axios";
 import router from "../router";
 
+import Modal from "@/components/Modal.vue";
+
 export default {
-  // components: {}
+  components: { Modal },
   props: {},
   setup() {
     const isLoading = ref(false);
+    const isOpen = ref(false);
     const route = useRoute();
     const book = route.query.book;
     const list = ref([]);
@@ -91,6 +96,16 @@ export default {
       }
     };
 
+    const searchDataWithText = () => {
+      document.querySelector("html").style.overflowY = "hidden";
+      isOpen.value = true;
+    };
+
+    const closeModal = () => {
+      document.querySelector("html").style.overflowY = "auto";
+      isOpen.value = false;
+    };
+
     const backToHome = () => {
       router.push("/");
     };
@@ -127,6 +142,7 @@ export default {
     //watch(titles, (title) => console.log(title));
     return {
       isLoading,
+      isOpen,
       book,
       currPage,
       totalPage,
@@ -134,6 +150,8 @@ export default {
       prevPage,
       nextPage,
       backToHome,
+      searchDataWithText,
+      closeModal,
     };
   },
 };
