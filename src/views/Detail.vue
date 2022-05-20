@@ -1,17 +1,29 @@
 <template>
-  <div class="bg-gray-900 text-white">
-    <div v-if="isLoading && !isLoadingModal" class="h-full min-h-screen flex flex-col justify-start items-center pt-4">
+  <div class="bg-gray-900 text-white h-full min-h-screen">
+    <div
+      v-if="isLoading && !isLoadingModal && !isLoadingRestoreData"
+      class="flex flex-col justify-start items-center pt-4"
+    >
       <img src="@/assets/images/loader-dot.gif" class="w-8 mb-2" alt="" srcset="" />
       <p>Memuat kitab halaman {{ currPage }}</p>
     </div>
-    <div v-if="isLoading && isLoadingModal" class="h-full min-h-screen flex flex-col justify-start items-center pt-4">
+    <div
+      v-else-if="isLoading && isLoadingModal && !isLoadingRestoreData"
+      class="flex flex-col justify-start items-center pt-4"
+    >
       <img src="@/assets/images/loader-dot.gif" class="w-8 mb-2" alt="" srcset="" />
       <p>Mencari kata kunci {{ keywords }}</p>
     </div>
+    <div
+      v-else-if="!isLoading && !isLoadingModal && isLoadingRestoreData"
+      class="flex flex-col justify-start items-center pt-4"
+    >
+      <img src="@/assets/images/loader-dot.gif" class="w-8 mb-2" alt="" srcset="" />
+      <p>Mengembalikan data</p>
+    </div>
+
     <div v-else class="pb-20">
-      <div class="h-full min-h-screen flex justify-center items-center" v-if="list.length === 0">
-        Data tidak ditemukan..
-      </div>
+      <div class="flex justify-center items-center pt-4" v-if="list.length === 0">🚫 Kata tidak ditemukan..</div>
       <div v-else v-for="item in list" class="p-4 pb-0">
         <div class="bg-gray-500 p-4 rounded-md">
           <div class="text-xl teks-arab">{{ item.arab }}</div>
@@ -41,7 +53,10 @@
           ▶️
         </button>
       </div>
-      <button class="hover:bg-gray-100 text-white h-full px-2 py-2 rounded-lg" @click="searchDataWithText">🔍</button>
+      <div class="flex">
+        <button class="hover:bg-gray-100 text-white h-full px-2 py-2 rounded-lg" @click="restoreData">↩️</button>
+        <button class="hover:bg-gray-100 text-white h-full px-2 py-2 rounded-lg" @click="searchDataWithText">🔍</button>
+      </div>
     </footer>
 
     <Modal
@@ -71,6 +86,7 @@ export default {
     const isLoading = ref(false);
     const isLoadingModal = ref(false);
     const keywords = ref(null);
+    const isLoadingRestoreData = ref(false);
 
     const isOpenModal = ref(false);
     const route = useRoute();
@@ -131,10 +147,34 @@ export default {
       getBooks();
     };
 
+    const restoreData = async () => {
+      isLoading.value = false;
+      isLoadingModal.value = false;
+      keywords.value = null;
+      isLoadingRestoreData.value = true;
+
+      try {
+        const params = {
+          book,
+          page: currPage.value,
+          limit: limit.value,
+        };
+        const res = await api().detail.searchTextFromBooks(params);
+
+        list.value = res.data.result.results;
+        totalPage.value = res.data.result.totalPage;
+      } catch (error) {
+        console.log(error);
+      } finally {
+        isLoadingRestoreData.value = false;
+      }
+    };
+
     const submitSearchText = async (value) => {
       isLoading.value = true;
       isLoadingModal.value = true;
       keywords.value = value;
+      isLoadingRestoreData.value = false;
 
       try {
         const params = {
@@ -165,6 +205,7 @@ export default {
     return {
       isLoading,
       isLoadingModal,
+      isLoadingRestoreData,
       keywords,
       isOpenModal,
       book,
@@ -177,6 +218,7 @@ export default {
       searchDataWithText,
       closeModal,
       submitSearchText,
+      restoreData,
     };
   },
 };
